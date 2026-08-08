@@ -78,8 +78,10 @@
   .cart-footer{ padding:8px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; }
 
   @media (max-width: 700px){
-    header{ height:auto; flex-wrap:wrap; padding:10px 14px; }
-    #grid-wrap{ top:auto; }
+   html, body{ height:auto; overflow:auto; }
+    header{ position:static; height:auto; flex-wrap:wrap; padding:10px 14px; }
+    #grid-wrap{ position:static; top:auto; left:auto; right:auto; bottom:auto; overflow:visible; }
+    #cartPanel{ width:calc(100% - 40px); }
     .slider-group{ display:none; }
     #grid{ grid-template-columns: repeat(4, 1fr) !important; }
   }
