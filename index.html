@@ -4,27 +4,27 @@
 <title>Typely</title>
 <style>
   :root{
-    --bg:#000000; --surface:#0c0c0c; --surface-alt:#191919; --border:#191919;
-    --text:#eaeaea; --text-dim:#8a8a8a;
+    --bg:#000000; --surface:#000000; --surface-alt:#000000; --border:#191919;
+    --text:#9a9a9a; --text-dim:#6b6b6b;
   }
   @media (prefers-color-scheme: light){
     :root{
-      --bg:#ffffff; --surface:#f3f3f3; --surface-alt:#e6e6e6; --border:#e6e6e6;
-      --text:#151515; --text-dim:#6b6b6b;
+      --bg:#ffffff; --surface:#ffffff; --surface-alt:#ffffff; --border:#e6e6e6;
+      --text:#6b6b6b; --text-dim:#9a9a9a;
     }
   }
   html[data-theme="dark"]{
-    --bg:#000000; --surface:#0c0c0c; --surface-alt:#191919; --border:#191919;
-    --text:#eaeaea; --text-dim:#8a8a8a;
+    --bg:#000000; --surface:#000000; --surface-alt:#000000; --border:#191919;
+    --text:#9a9a9a; --text-dim:#6b6b6b;
   }
   html[data-theme="light"]{
-    --bg:#ffffff; --surface:#f3f3f3; --surface-alt:#e6e6e6; --border:#e6e6e6;
-    --text:#151515; --text-dim:#6b6b6b;
+    --bg:#ffffff; --surface:#ffffff; --surface-alt:#ffffff; --border:#e6e6e6;
+    --text:#6b6b6b; --text-dim:#9a9a9a;
   }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; height:100%; background:var(--bg); color:var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; overflow:hidden; }
 
-  header{ position:fixed; top:0; left:0; right:0; height:64px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:20; gap:10px; }
+  header{ position:fixed; top:0; left:0; right:0; height:80px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:20; gap:10px; }
   .brand{ font-weight:600; font-size:15px; letter-spacing:.3px; color:var(--text); flex:0 0 auto; }
   .controls{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:flex-end; }
   .slider-group{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); }
@@ -40,7 +40,7 @@
   .donate{ text-decoration:none; font-size:12px; color:var(--text-dim); border:1px solid var(--border); padding:6px 14px; border-radius:20px; }
   .donate:hover{ color:var(--text); border-color:var(--text-dim); }
 
-  #grid-wrap{ position:fixed; top:64px; left:0; right:0; bottom:0; overflow-y:auto; background:var(--bg); }
+  #grid-wrap{ position:fixed; top:80px; left:0; right:0; bottom:0; overflow-y:auto; background:var(--bg); }
   #grid{ display:grid; }
 
   .cell{ position:relative; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; user-select:none; }
@@ -62,7 +62,7 @@
   .ov-char{ font-size:120px; font-family: Menlo, Consolas, monospace; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 36px; min-width:1ch; text-align:center; }
   .ov-done{ font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); }
 
-  #cartPanel{ position:fixed; top:74px; right:20px; width:300px; max-height:70vh; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.3); display:flex; flex-direction:column; overflow:hidden; z-index:25; transform:translateY(-8px); opacity:0; pointer-events:none; transition: opacity .12s ease, transform .12s ease; }
+  #cartPanel{ position:fixed; top:90px; right:20px; width:300px; max-height:70vh; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.3); display:flex; flex-direction:column; overflow:hidden; z-index:25; transform:translateY(-8px); opacity:0; pointer-events:none; transition: opacity .12s ease, transform .12s ease; }
   #cartPanel.open{ opacity:1; pointer-events:auto; transform:translateY(0); }
   .cart-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; }
   .cart-body{ overflow-y:auto; flex:1; padding:6px; display:flex; flex-direction:column; gap:4px; max-height:50vh; }
@@ -198,7 +198,7 @@
 
   var prefersDark = false;
   if(window.matchMedia){
-    if(window.matchMedia('(prefers-color-scheme: dark)').matches) prefersDark = true;
+    // siempre modo claro por defecto, sin importar preferencia del sistema
   }
   document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
   setThemeIcon(prefersDark);
