@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-theme="dark"><head>
+<html data-theme="light"><head>
 <meta charset="UTF-8">
 <title>Typely</title>
 <style>
@@ -196,9 +196,9 @@
   function setCloseIcon(){ cartClose.innerHTML = ICO_CLOSE; }
   function setTrashIcon(){ cartClear.innerHTML = ICO_TRASH; }
 
-  var prefersDark = true;
+  var prefersDark = false;
   if(window.matchMedia){
-    if(window.matchMedia('(prefers-color-scheme: light)').matches) prefersDark = false;
+    if(window.matchMedia('(prefers-color-scheme: dark)').matches) prefersDark = true;
   }
   document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
   setThemeIcon(prefersDark);
