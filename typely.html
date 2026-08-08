@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html data-theme="dark"><head>
+<meta charset="UTF-8">
+<title>Typely</title>
+<style>
+  :root{
+    --bg:#000000; --surface:#0c0c0c; --surface-alt:#191919; --border:#191919;
+    --text:#eaeaea; --text-dim:#8a8a8a;
+  }
+  html[data-theme="light"]{
+    --bg:#ffffff; --surface:#f3f3f3; --surface-alt:#e6e6e6; --border:#e6e6e6;
+    --text:#151515; --text-dim:#6b6b6b;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; background:var(--bg); color:var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; overflow:hidden; }
+
+  header{ position:fixed; top:0; left:0; right:0; height:64px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:20; }
+  .brand{ font-weight:600; font-size:15px; letter-spacing:.3px; color:var(--text); }
+  .controls{ display:flex; align-items:center; gap:14px; }
+  .slider-group{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); }
+  .slider-group input[type=range]{ width:110px; accent-color: var(--text-dim); }
+
+  .icon-btn{ width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--surface-alt); color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; padding:0; }
+  .icon-btn:hover{ background:var(--border); }
+  .icon-btn.active{ box-shadow: 0 0 0 2px var(--text-dim) inset; }
+  .icon-btn.small{ width:26px; height:26px; border-radius:6px; }
+  .icon-btn svg{ width:16px; height:16px; }
+
+  .badge{ position:absolute; top:-6px; right:-6px; min-width:16px; height:16px; border-radius:8px; background:var(--text); color:var(--bg); font-size:10px; display:flex; align-items:center; justify-content:center; padding:0 3px; font-weight:600; }
+
+  .donate{ text-decoration:none; font-size:12px; color:var(--text-dim); border:1px solid var(--border); padding:6px 14px; border-radius:20px; }
+  .donate:hover{ color:var(--text); border-color:var(--text-dim); }
+
+  #grid-wrap{ position:fixed; top:64px; left:0; right:0; bottom:0; overflow-y:auto; background:var(--bg); }
+  #grid{ display:grid; }
+
+  .cell{ position:relative; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; user-select:none; }
+  .cell.tint{ background:var(--surface-alt); }
+  .cell:hover{ background:var(--border); }
+  .cell.flash{ background:var(--text-dim) !important; }
+
+  .symbol{ font-family: Menlo, Consolas, monospace; font-size: calc(var(--cell-size,60px) * 0.38); line-height:1; pointer-events:none; }
+  #grid.periodic .symbol{ font-size: calc(var(--cell-size,60px) * 0.3); }
+
+  .atomic-num{ position:absolute; top:6px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--text-dim); opacity:0; pointer-events:none; font-family:monospace; }
+  .shortcut{ position:absolute; bottom:6px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--text-dim); opacity:0; pointer-events:none; font-family:monospace; white-space:nowrap; }
+  #grid.periodic .atomic-num, #grid.periodic .shortcut{ opacity:1; }
+
+  #backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition: opacity .07s linear; z-index:30; }
+  html[data-theme="light"] #backdrop{ background:rgba(255,255,255,.7); }
+  #backdrop.show{ opacity:1; }
+
+  #overlay{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.85); opacity:0; transition: opacity .07s linear, transform .07s linear; z-index:31; display:flex; flex-direction:column; align-items:center; gap:10px; pointer-events:none; }
+  #overlay.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .ov-char{ font-size:120px; font-family: Menlo, Consolas, monospace; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 36px; min-width:1ch; text-align:center; }
+  .ov-done{ font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); }
+
+  #cartPanel{ position:fixed; top:74px; right:20px; width:300px; max-height:70vh; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.3); display:flex; flex-direction:column; overflow:hidden; z-index:25; transform:translateY(-8px); opacity:0; pointer-events:none; transition: opacity .12s ease, transform .12s ease; }
+  #cartPanel.open{ opacity:1; pointer-events:auto; transform:translateY(0); }
+  .cart-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--border); font-size:13px; font-weight:600; }
+  .cart-body{ overflow-y:auto; flex:1; padding:6px; display:flex; flex-direction:column; gap:4px; max-height:50vh; }
+  .cart-item{ display:flex; align-items:center; justify-content:space-between; padding:6px; border-radius:8px; gap:8px; }
+  .cart-item:hover{ background:var(--surface-alt); }
+  .item-main{ display:flex; align-items:center; gap:10px; cursor:pointer; flex:1; min-width:0; }
+  .swatch{ width:32px; height:32px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:6px; background:var(--surface-alt); font-family:monospace; font-size:15px; color:var(--text); }
+  .name{ font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .remove{ background:none; border:none; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:5px; flex:0 0 auto; padding:0; }
+  .remove:hover{ background:var(--border); color:var(--text); }
+  .remove svg{ width:12px; height:12px; }
+  .cart-empty{ padding:24px 10px; text-align:center; font-size:12px; color:var(--text-dim); }
+  .cart-footer{ padding:8px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; }
+</style>
+<style id="claude-agent-animation-styles">
+      @keyframes claude-pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+      #claude-agent-glow-border-inner {
+        animation: claude-pulse 2s ease-in-out infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #claude-agent-glow-border-inner {
+          animation: none;
+        }
+      }
+    </style></head>
+<body>
+
+<header>
+  <div class="brand">Typely</div>
+  <div class="controls">
+    <div class="slider-group">
+      <span>Tamano</span>
+      <input type="range" id="colsSlider" min="4" max="18" value="10">
+    </div>
+    <button id="periodicToggle" class="icon-btn active" type="button" title="Modo tabla periodica"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v8.5L4.8 18a2.8 2.8 0 0 0 2.4 4h9.6a2.8 2.8 0 0 0 2.4-4L15 10.5V2"></path><path d="M8 2h8"></path><path d="M8.5 14h7"></path></svg></button>
+    <button id="themeToggle" class="icon-btn" type="button" title="Cambiar tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path></svg></button>
+    <button id="cartBtn" class="icon-btn" type="button" title="Portapapeles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg><span id="cartBadge" class="badge">3</span></button>
+    <a class="donate" href="https://www.flow.cl/btn.php?token=TU_TOKEN_AQUI" target="_blank" rel="noopener">Dona</a>
+  </div>
+</header>
+
+<div id="cartPanel">
+  <div class="cart-header">
+    <span>Portapapeles</span>
+    <button id="cartClose" class="icon-btn small" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+  </div>
+  <div id="cartBody" class="cart-body"><div class="cart-item"><div class="item-main"><div class="swatch">-</div><div class="name">guion</div></div><button class="remove" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="cart-item"><div class="item-main"><div class="swatch">!</div><div class="name">exclamacion</div></div><button class="remove" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="cart-item"><div class="item-main"><div class="swatch">@</div><div class="name">arroba</div></div><button class="remove" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div></div>
+  <div class="cart-footer">
+    <button id="cartClear" class="icon-btn small" type="button" title="Vaciar portapapeles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
+  </div>
+</div>
+
+<div id="grid-wrap"><div id="grid" style="--cell-size: 151.9px; grid-template-columns: repeat(10, 1fr); grid-auto-rows: 151.9px;" class="periodic"><div class="cell" data-ch="@"><span class="atomic-num">1</span><span class="symbol">@</span><span class="shortcut">Alt+64</span></div><div class="cell" data-ch="#"><span class="atomic-num">2</span><span class="symbol">#</span><span class="shortcut">Alt+35</span></div><div class="cell" data-ch="$"><span class="atomic-num">3</span><span class="symbol">$</span><span class="shortcut">Alt+36</span></div><div class="cell tint" data-ch="%"><span class="atomic-num">4</span><span class="symbol">%</span><span class="shortcut">Alt+37</span></div><div class="cell" data-ch="&amp;"><span class="atomic-num">5</span><span class="symbol">&amp;</span><span class="shortcut">Alt+38</span></div><div class="cell" data-ch="*"><span class="atomic-num">6</span><span class="symbol">*</span><span class="shortcut">Alt+42</span></div><div class="cell tint" data-ch="+"><span class="atomic-num">7</span><span class="symbol">+</span><span class="shortcut">Alt+43</span></div><div class="cell" data-ch="-"><span class="atomic-num">8</span><span class="symbol">-</span><span class="shortcut">Alt+45</span></div><div class="cell" data-ch="="><span class="atomic-num">9</span><span class="symbol">=</span><span class="shortcut">Alt+61</span></div><div class="cell tint" data-ch="/"><span class="atomic-num">10</span><span class="symbol">/</span><span class="shortcut">Alt+47</span></div><div class="cell" data-ch="^"><span class="atomic-num">11</span><span class="symbol">^</span><span class="shortcut">Alt+94</span></div><div class="cell tint" data-ch="~"><span class="atomic-num">12</span><span class="symbol">~</span><span class="shortcut">Alt+126</span></div><div class="cell" data-ch="|"><span class="atomic-num">13</span><span class="symbol">|</span><span class="shortcut">Alt+124</span></div><div class="cell" data-ch="_"><span class="atomic-num">14</span><span class="symbol">_</span><span class="shortcut">Alt+95</span></div><div class="cell" data-ch="&lt;"><span class="atomic-num">15</span><span class="symbol">&lt;</span><span class="shortcut">Alt+60</span></div><div class="cell" data-ch="&gt;"><span class="atomic-num">16</span><span class="symbol">&gt;</span><span class="shortcut">Alt+62</span></div><div class="cell" data-ch="("><span class="atomic-num">17</span><span class="symbol">(</span><span class="shortcut">Alt+40</span></div><div class="cell" data-ch=")"><span class="atomic-num">18</span><span class="symbol">)</span><span class="shortcut">Alt+41</span></div><div class="cell" data-ch="["><span class="atomic-num">19</span><span class="symbol">[</span><span class="shortcut">Alt+91</span></div><div class="cell" data-ch="]"><span class="atomic-num">20</span><span class="symbol">]</span><span class="shortcut">Alt+93</span></div><div class="cell" data-ch="{"><span class="atomic-num">21</span><span class="symbol">{</span><span class="shortcut">Alt+123</span></div><div class="cell" data-ch="}"><span class="atomic-num">22</span><span class="symbol">}</span><span class="shortcut">Alt+125</span></div><div class="cell tint" data-ch="."><span class="atomic-num">23</span><span class="symbol">.</span><span class="shortcut">Alt+46</span></div><div class="cell" data-ch=","><span class="atomic-num">24</span><span class="symbol">,</span><span class="shortcut">Alt+44</span></div><div class="cell" data-ch=";"><span class="atomic-num">25</span><span class="symbol">;</span><span class="shortcut">Alt+59</span></div><div class="cell" data-ch=":"><span class="atomic-num">26</span><span class="symbol">:</span><span class="shortcut">Alt+58</span></div><div class="cell" data-ch="!"><span class="atomic-num">27</span><span class="symbol">!</span><span class="shortcut">Alt+33</span></div><div class="cell" data-ch="?"><span class="atomic-num">28</span><span class="symbol">?</span><span class="shortcut">Alt+63</span></div><div class="cell" data-ch="…"><span class="atomic-num">29</span><span class="symbol">…</span><span class="shortcut">Alt+0133</span></div><div class="cell" data-ch="€"><span class="atomic-num">30</span><span class="symbol">€</span><span class="shortcut">Alt+0128</span></div><div class="cell" data-ch="£"><span class="atomic-num">31</span><span class="symbol">£</span><span class="shortcut">Alt+0163</span></div><div class="cell" data-ch="¥"><span class="atomic-num">32</span><span class="symbol">¥</span><span class="shortcut">Alt+0165</span></div><div class="cell" data-ch="¢"><span class="atomic-num">33</span><span class="symbol">¢</span><span class="shortcut">Alt+0162</span></div><div class="cell" data-ch="₩"><span class="atomic-num">34</span><span class="symbol">₩</span><span class="shortcut">—</span></div><div class="cell tint" data-ch="₹"><span class="atomic-num">35</span><span class="symbol">₹</span><span class="shortcut">—</span></div><div class="cell" data-ch="©"><span class="atomic-num">36</span><span class="symbol">©</span><span class="shortcut">Alt+0169</span></div><div class="cell" data-ch="®"><span class="atomic-num">37</span><span class="symbol">®</span><span class="shortcut">Alt+0174</span></div><div class="cell" data-ch="™"><span class="atomic-num">38</span><span class="symbol">™</span><span class="shortcut">Alt+0153</span></div><div class="cell" data-ch="°"><span class="atomic-num">39</span><span class="symbol">°</span><span class="shortcut">Alt+0176</span></div><div class="cell tint" data-ch="§"><span class="atomic-num">40</span><span class="symbol">§</span><span class="shortcut">Alt+0167</span></div><div class="cell" data-ch="¶"><span class="atomic-num">41</span><span class="symbol">¶</span><span class="shortcut">Alt+0182</span></div><div class="cell" data-ch="‰"><span class="atomic-num">42</span><span class="symbol">‰</span><span class="shortcut">Alt+0137</span></div><div class="cell" data-ch="¤"><span class="atomic-num">43</span><span class="symbol">¤</span><span class="shortcut">Alt+0164</span></div><div class="cell" data-ch="¦"><span class="atomic-num">44</span><span class="symbol">¦</span><span class="shortcut">Alt+0166</span></div><div class="cell" data-ch="«"><span class="atomic-num">45</span><span class="symbol">«</span><span class="shortcut">Alt+0171</span></div><div class="cell" data-ch="»"><span class="atomic-num">46</span><span class="symbol">»</span><span class="shortcut">Alt+0187</span></div><div class="cell tint" data-ch="‹"><span class="atomic-num">47</span><span class="symbol">‹</span><span class="shortcut">—</span></div><div class="cell" data-ch="›"><span class="atomic-num">48</span><span class="symbol">›</span><span class="shortcut">—</span></div><div class="cell" data-ch="„"><span class="atomic-num">49</span><span class="symbol">„</span><span class="shortcut">Alt+0132</span></div><div class="cell tint" data-ch="‚"><span class="atomic-num">50</span><span class="symbol">‚</span><span class="shortcut">Alt+0130</span></div><div class="cell" data-ch="¬"><span class="atomic-num">51</span><span class="symbol">¬</span><span class="shortcut">Alt+0172</span></div><div class="cell" data-ch="±"><span class="atomic-num">52</span><span class="symbol">±</span><span class="shortcut">Alt+0177</span></div><div class="cell tint" data-ch="×"><span class="atomic-num">53</span><span class="symbol">×</span><span class="shortcut">Alt+0215</span></div><div class="cell tint" data-ch="÷"><span class="atomic-num">54</span><span class="symbol">÷</span><span class="shortcut">Alt+0247</span></div><div class="cell" data-ch="√"><span class="atomic-num">55</span><span class="symbol">√</span><span class="shortcut">—</span></div><div class="cell" data-ch="π"><span class="atomic-num">56</span><span class="symbol">π</span><span class="shortcut">—</span></div><div class="cell" data-ch="∞"><span class="atomic-num">57</span><span class="symbol">∞</span><span class="shortcut">—</span></div><div class="cell" data-ch="≈"><span class="atomic-num">58</span><span class="symbol">≈</span><span class="shortcut">—</span></div><div class="cell" data-ch="≠"><span class="atomic-num">59</span><span class="symbol">≠</span><span class="shortcut">—</span></div><div class="cell" data-ch="≤"><span class="atomic-num">60</span><span class="symbol">≤</span><span class="shortcut">—</span></div><div class="cell" data-ch="≥"><span class="atomic-num">61</span><span class="symbol">≥</span><span class="shortcut">—</span></div><div class="cell" data-ch="µ"><span class="atomic-num">62</span><span class="symbol">µ</span><span class="shortcut">Alt+0181</span></div><div class="cell" data-ch="∑"><span class="atomic-num">63</span><span class="symbol">∑</span><span class="shortcut">—</span></div><div class="cell" data-ch="∆"><span class="atomic-num">64</span><span class="symbol">∆</span><span class="shortcut">—</span></div><div class="cell tint" data-ch="Ω"><span class="atomic-num">65</span><span class="symbol">Ω</span><span class="shortcut">—</span></div><div class="cell" data-ch="‽"><span class="atomic-num">66</span><span class="symbol">‽</span><span class="shortcut">—</span></div><div class="cell" data-ch="†"><span class="atomic-num">67</span><span class="symbol">†</span><span class="shortcut">Alt+0134</span></div><div class="cell" data-ch="‡"><span class="atomic-num">68</span><span class="symbol">‡</span><span class="shortcut">Alt+0135</span></div><div class="cell" data-ch="•"><span class="atomic-num">69</span><span class="symbol">•</span><span class="shortcut">Alt+0149</span></div><div class="cell" data-ch="№"><span class="atomic-num">70</span><span class="symbol">№</span><span class="shortcut">—</span></div><div class="cell" data-ch="℅"><span class="atomic-num">71</span><span class="symbol">℅</span><span class="shortcut">—</span></div><div class="cell" data-ch="\"><span class="atomic-num">72</span><span class="symbol">\</span><span class="shortcut">Alt+92</span></div><div class="cell tint" data-ch="`"><span class="atomic-num">73</span><span class="symbol">`</span><span class="shortcut">Alt+96</span></div><div class="cell" data-ch="'"><span class="atomic-num">74</span><span class="symbol">'</span><span class="shortcut">Alt+39</span></div><div class="cell tint" data-ch="&quot;"><span class="atomic-num">75</span><span class="symbol">"</span><span class="shortcut">Alt+34</span></div></div></div>
+
+<div id="backdrop" class=""></div>
+<div id="overlay" class="">
+  <div class="ov-char" id="ovChar">-</div>
+  <div class="ov-done">Done</div>
+</div>
+
+<script>
+  var ICO_FLASK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v8.5L4.8 18a2.8 2.8 0 0 0 2.4 4h9.6a2.8 2.8 0 0 0 2.4-4L15 10.5V2"/><path d="M8 2h8"/><path d="M8.5 14h7"/></svg>';
+  var ICO_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>';
+  var ICO_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z"/></svg>';
+  var ICO_BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
+  var ICO_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+  var ICO_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  var symbolNames = {
+    '@':'arroba','#':'numeral','$':'peso','%':'porcentaje','&':'ampersand','*':'asterisco','+':'mas','-':'guion','=':'igual','/':'slash','^':'circunflejo','~':'tilde','|':'barra vertical','_':'guion bajo','<':'menor que','>':'mayor que',
+    '(':'parentesis izquierdo',')':'parentesis derecho','[':'corchete izquierdo',']':'corchete derecho','{':'llave izquierda','}':'llave derecha',
+    '.':'punto',',':'coma',';':'punto y coma',':':'dos puntos','!':'exclamacion','?':'interrogacion','…':'puntos suspensivos',
+    '€':'euro','£':'libra','¥':'yen','¢':'centavo','₩':'won','₹':'rupia','©':'copyright','®':'registrado','™':'marca registrada','°':'grados','§':'seccion',
+    '¶':'parrafo','‰':'por mil','¤':'moneda generica','¦':'barra partida',
+    '«':'comillas angulares izq','»':'comillas angulares der','‹':'comilla angular simple izq','›':'comilla angular simple der','„':'comilla baja doble','‚':'comilla baja simple',
+    '¬':'negacion','±':'mas menos','×':'multiplicacion','÷':'division','√':'raiz cuadrada','π':'pi','∞':'infinito','≈':'aproximado','≠':'distinto','≤':'menor o igual','≥':'mayor o igual','µ':'micro','∑':'sumatoria','∆':'delta','Ω':'omega',
+    '‽':'interrobang','†':'daga','‡':'daga doble','•':'vineta','№':'numero','℅':'al cuidado de'
+  };
+  var symbolShortcuts = {
+    '@':'Alt+64','#':'Alt+35','$':'Alt+36','%':'Alt+37','&':'Alt+38','*':'Alt+42','+':'Alt+43','-':'Alt+45','=':'Alt+61','/':'Alt+47','^':'Alt+94','~':'Alt+126','|':'Alt+124','_':'Alt+95','<':'Alt+60','>':'Alt+62',
+    '(':'Alt+40',')':'Alt+41','[':'Alt+91',']':'Alt+93','{':'Alt+123','}':'Alt+125',
+    '.':'Alt+46',',':'Alt+44',';':'Alt+59',':':'Alt+58','!':'Alt+33','?':'Alt+63','…':'Alt+0133',
+    '€':'Alt+0128','£':'Alt+0163','¥':'Alt+0165','¢':'Alt+0162','₩':'—','₹':'—','©':'Alt+0169','®':'Alt+0174','™':'Alt+0153','°':'Alt+0176','§':'Alt+0167',
+    '¶':'Alt+0182','‰':'Alt+0137','¤':'Alt+0164','¦':'Alt+0166',
+    '«':'Alt+0171','»':'Alt+0187','‹':'—','›':'—','„':'Alt+0132','‚':'Alt+0130',
+    '¬':'Alt+0172','±':'Alt+0177','×':'Alt+0215','÷':'Alt+0247','√':'—','π':'—','∞':'—','≈':'—','≠':'—','≤':'—','≥':'—','µ':'Alt+0181','∑':'—','∆':'—','Ω':'—',
+    '‽':'—','†':'Alt+0134','‡':'Alt+0135','•':'Alt+0149','№':'—','℅':'—'
+  };
+  var BS = String.fromCharCode(92), SQ = String.fromCharCode(39), BT = String.fromCharCode(96), DQ = String.fromCharCode(34);
+  symbolNames[BS]='barra invertida'; symbolNames[BT]='acento grave'; symbolNames[SQ]='comilla simple'; symbolNames[DQ]='comilla doble';
+  symbolShortcuts[BS]='Alt+92'; symbolShortcuts[BT]='Alt+96'; symbolShortcuts[SQ]='Alt+39'; symbolShortcuts[DQ]='Alt+34';
+
+  var symbols = Object.keys(symbolNames);
+  var currentCols = 10;
+  var cartOrder = [];
+  var overlayTimer = null;
+
+  var gridWrap = document.getElementById('grid-wrap');
+  var grid = document.getElementById('grid');
+  var backdrop = document.getElementById('backdrop');
+  var overlay = document.getElementById('overlay');
+  var ovChar = document.getElementById('ovChar');
+  var periodicToggle = document.getElementById('periodicToggle');
+  var themeToggle = document.getElementById('themeToggle');
+  var cartBtn = document.getElementById('cartBtn');
+  var cartBadge = document.getElementById('cartBadge');
+  var cartPanel = document.getElementById('cartPanel');
+  var cartBody = document.getElementById('cartBody');
+  var cartClose = document.getElementById('cartClose');
+  var cartClear = document.getElementById('cartClear');
+  var slider = document.getElementById('colsSlider');
+
+  periodicToggle.innerHTML = ICO_FLASK;
+  themeToggle.innerHTML = ICO_SUN;
+  cartBtn.insertAdjacentHTML('afterbegin', ICO_BAG);
+  cartClose.innerHTML = ICO_CLOSE;
+  cartClear.innerHTML = ICO_TRASH;
+
+  function buildGrid(){
+    grid.innerHTML = '';
+    for(var i=0;i<symbols.length;i++){
+      var ch = symbols[i];
+      var cell = document.createElement('div');
+      cell.className = 'cell';
+      if(Math.random() < 0.1) cell.classList.add('tint');
+      cell.dataset.ch = ch;
+
+      var num = document.createElement('span');
+      num.className = 'atomic-num';
+      num.textContent = String(i+1);
+
+      var sym = document.createElement('span');
+      sym.className = 'symbol';
+      sym.textContent = ch;
+
+      var sc = document.createElement('span');
+      sc.className = 'shortcut';
+      sc.textContent = symbolShortcuts[ch] || '—';
+
+      cell.appendChild(num);
+      cell.appendChild(sym);
+      cell.appendChild(sc);
+      cell.addEventListener('click', function(){
+        var c = this.dataset.ch;
+        copyToClipboard(c);
+        showOverlay(c);
+        addToCart(c);
+        var el = this;
+        el.classList.add('flash');
+        setTimeout(function(){ el.classList.remove('flash'); }, 150);
+      });
+      grid.appendChild(cell);
+    }
+    applySize();
+  }
+
+  function applySize(){
+    var w = gridWrap.clientWidth;
+    var cellSize = w / currentCols;
+    grid.style.setProperty('--cell-size', cellSize + 'px');
+    grid.style.gridTemplateColumns = 'repeat(' + currentCols + ', 1fr)';
+    grid.style.gridAutoRows = cellSize + 'px';
+  }
+
+  function copyToClipboard(ch){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ch).catch(function(){});
+    }
+  }
+
+  function showOverlay(ch){
+    ovChar.textContent = ch;
+    backdrop.classList.add('show');
+    overlay.classList.add('show');
+    if(overlayTimer) clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(function(){
+      backdrop.classList.remove('show');
+      overlay.classList.remove('show');
+    }, 300);
+  }
+
+  function addToCart(ch){
+    var idx = cartOrder.indexOf(ch);
+    if(idx !== -1) cartOrder.splice(idx,1);
+    cartOrder.unshift(ch);
+    renderCart();
+  }
+
+  function removeFromCart(ch){
+    var idx = cartOrder.indexOf(ch);
+    if(idx !== -1) cartOrder.splice(idx,1);
+    renderCart();
+  }
+
+  function renderCart(){
+    cartBadge.textContent = String(cartOrder.length);
+    cartBody.innerHTML = '';
+    if(cartOrder.length === 0){
+      var empty = document.createElement('div');
+      empty.className = 'cart-empty';
+      empty.textContent = 'Aun no has copiado simbolos';
+      cartBody.appendChild(empty);
+      return;
+    }
+    for(var i=0;i<cartOrder.length;i++){
+      var ch = cartOrder[i];
+      (function(ch){
+        var row = document.createElement('div');
+        row.className = 'cart-item';
+
+        var main = document.createElement('div');
+        main.className = 'item-main';
+
+        var swatch = document.createElement('div');
+        swatch.className = 'swatch';
+        swatch.textContent = ch;
+
+        var name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = symbolNames[ch] || '';
+
+        main.appendChild(swatch);
+        main.appendChild(name);
+        main.addEventListener('click', function(){
+          copyToClipboard(ch);
+          showOverlay(ch);
+        });
+
+        var rm = document.createElement('button');
+        rm.className = 'remove';
+        rm.type = 'button';
+        rm.innerHTML = ICO_CLOSE;
+        rm.addEventListener('click', function(e){
+          e.stopPropagation();
+          removeFromCart(ch);
+        });
+
+        row.appendChild(main);
+        row.appendChild(rm);
+        cartBody.appendChild(row);
+      })(ch);
+    }
+  }
+
+  periodicToggle.addEventListener('click', function(){
+    grid.classList.toggle('periodic');
+    periodicToggle.classList.toggle('active');
+  });
+
+  themeToggle.addEventListener('click', function(){
+    var html = document.documentElement;
+    var isLight = html.getAttribute('data-theme') === 'light';
+    html.setAttribute('data-theme', isLight ? 'dark' : 'light');
+    themeToggle.innerHTML = isLight ? ICO_SUN : ICO_MOON;
+  });
+
+  cartBtn.addEventListener('click', function(){
+    cartPanel.classList.toggle('open');
+  });
+  cartClose.addEventListener('click', function(){
+    cartPanel.classList.remove('open');
+  });
+  cartClear.addEventListener('click', function(){
+    cartOrder = [];
+    renderCart();
+  });
+
+  slider.addEventListener('input', function(){
+    currentCols = parseInt(slider.value, 10);
+    applySize();
+  });
+
+  window.addEventListener('resize', applySize);
+
+  buildGrid();
+  renderCart();
+</script>
+
+</body></html>
